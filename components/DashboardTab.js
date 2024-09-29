@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import TransactionForm from '@/components/TransactionForm'; // Import the transaction form
 import ExpensePieChart from '@/components/ExpensePieChart'; 
 import { Badge } from '@/components/ui/badge';
+import { Separator } from "@/components/ui/separator"
 
 const DashboardTab = () => {
   const [balance, setBalance] = useState(0);
@@ -85,9 +86,9 @@ const DashboardTab = () => {
                 Expenses: {currency === 'EUR' ? '€' : 'lei'}{(totalExpenses / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
               </Badge>
             </div>
-            
+            <Separator className="my-2" />
             <div className='pace-y-1.5'>
-            <CardTitle className='mt-16 mb-4'>Deposit</CardTitle>
+              <CardTitle className='mt-2 mb-4'>Deposit</CardTitle>
             </div>
             <div className="text-4xl font-bold mb-4">
               {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
@@ -100,6 +101,14 @@ const DashboardTab = () => {
                 Withdraws: {currency === 'EUR' ? '€' : 'lei'}{(totalWithdraws / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
               </Badge>
             </div>
+            <Separator className="my-2" />
+            <div className='pace-y-1.5'>
+              <CardTitle className='mt-2 mb-4'>Total</CardTitle>
+            </div>
+            <div className="text-4xl font-bold">
+              {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws+balance) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+            </div>
+
           </CardContent>
         </Card>
 
