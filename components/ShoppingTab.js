@@ -3,7 +3,9 @@ import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue,} from "@/components/ui/select"
-
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const ShoppingTab = () => {
   const [products, setProducts] = useState([]);
@@ -67,46 +69,59 @@ const ShoppingTab = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-      {/* Shopping List Table */}
-      <div>
-         {/* Add New Product Form */}
-         <div className="mt-6">
-          <h3 className="text-lg font-semibold">Add New Product</h3>
-          <div className="flex items-center space-x-2">
-            <input
-              type="text"
-              placeholder="Product Name"
-              value={newProduct.name}
-              onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-              className="border p-2"
-            />
-            <input
-              type="number"
-              min="1"
-              value={newProduct.amount}
-              onChange={(e) => setNewProduct({ ...newProduct, amount: e.target.value })}
-              className="border p-2"
-            />
-            <Select 
-            onValueChange={(value) => setNewProduct({ ...newProduct, importance: value })} 
-            defaultValue={newProduct.importance}
-            >
+      {/* Add New Product Form */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Add New Product</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4">
+            <div className="flex space-x-4 mt-5">
 
-                <SelectTrigger>
-                <SelectValue placeholder="Select importance" />
-                </SelectTrigger>
+                <Input
+                  type="text"
+                  placeholder="Product Name"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
 
-            <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-            </SelectContent>
-            </Select>
-          
-            <Button onClick={addProduct}>Add Product</Button>
-          </div>
-        </div>
-      </div>
+                />
+
+
+                <Input
+                  type="number"
+                  min="1"
+                  value={newProduct.amount}
+                  onChange={(e) => setNewProduct({ ...newProduct, amount: e.target.value })}
+
+                />
+           </div>
+              <div className="flex space-x-4 mt-5">
+             
+
+                <Select 
+                onValueChange={(value) => setNewProduct({ ...newProduct, importance: value })} 
+                defaultValue={newProduct.importance}
+                className="w-full p-2 border rounded min-w-28"
+                >
+
+                    <SelectTrigger>
+                    <SelectValue placeholder="Select importance" />
+                    </SelectTrigger>
+
+                <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+                </Select>
+              
+              <Button onClick={addProduct}>Add Product</Button>
+            </div>
+         
+          </form>
+        </CardContent>
+      </Card>
+
 
         <h2 className="text-2xl font-bold mb-4">Shopping List</h2>
         <Table>
