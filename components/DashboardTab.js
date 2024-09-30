@@ -7,8 +7,8 @@ import TransactionForm from '@/components/TransactionForm'; // Import the transa
 import ExpensePieChart from '@/components/ExpensePieChart'; 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from "@/components/ui/separator"
-import { FaEye } from "react-icons/fa";
-import { FaEyeSlash } from "react-icons/fa";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 const DashboardTab = () => {
   const [balance, setBalance] = useState(0);
@@ -121,7 +121,7 @@ const DashboardTab = () => {
               <button
                 onClick={toggleText}
                 className="mt-4 px-4 py-2 bg-zinc text-white rounded hover:bg-zinc-900 transition">
-                  {isRevealed ? <FaEyeSlash/> : <FaEye/>}
+                  {isRevealed ? <VisibilityIcon/> : <VisibilityOffIcon/>}
               </button>
             </div>
 
