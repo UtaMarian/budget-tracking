@@ -113,14 +113,14 @@ const DashboardTab = () => {
             </div>
             <div className="text-4xl font-bold flex">
                 <div className={`relative transition duration-300 ${isRevealed ? 'filter-none' : 'filter blur-sm'}`}>
-                <p className={`absolute inset-0 bg-gray-800 opacity-75 ${isRevealed ? 'hidden' : ''}`}></p>
+                <p className={`absolute inset-0 bg-zinc-700 opacity-75 ${isRevealed ? 'hidden' : ''}`}></p>
                 <p className={`relative z-10 ${isRevealed ? '' : 'blur'}`}>
                 {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws+balance) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
               </p>
             </div>
               <button
                 onClick={toggleText}
-                className="mt-4 px-4 py-2 bg-zinc text-white rounded hover:bg-zinc-900 transition">
+                className="transition">
                   {isRevealed ? <VisibilityIcon/> : <VisibilityOffIcon/>}
               </button>
             </div>
