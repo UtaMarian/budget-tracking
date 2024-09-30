@@ -15,7 +15,11 @@ const DashboardTab = () => {
   const [categories, setCategories] = useState([]);
   const [currency, setCurrency] = useState('LEI'); // Default to Euro
   const conversionRate = 5; // 1 Euro = 5 Lei
-
+  const [isRevealed, setIsRevealed] = useState(false);
+  const toggleText = () => {
+        setIsRevealed(!isRevealed);
+    };
+  
   useEffect(() => {
     fetchTransactions();
     fetchCategories();
@@ -106,7 +110,14 @@ const DashboardTab = () => {
               <CardTitle className='mt-2 mb-4'>Total</CardTitle>
             </div>
             <div className="text-4xl font-bold">
-              {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws+balance) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+              <p className={`transition duration-300 ${isRevealed ? 'filter-none' : 'filter blur-sm'}`}>
+                {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws+balance) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+              </p>
+              <button
+                onClick={toggleText}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+                  {isRevealed ? 'Hide Text' : 'Show Text'}
+              </button>
             </div>
 
           </CardContent>
