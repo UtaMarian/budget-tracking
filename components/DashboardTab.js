@@ -96,7 +96,7 @@ const DashboardTab = () => {
             <div className='pace-y-1.5'>
               <CardTitle className='mt-2 mb-4'>Deposit</CardTitle>
             </div>
-            <div className="text-4xl font-bold mb-4">
+            <div className="text-4xl font-bold mb-4 flex">
                 <div className={`relative transition duration-300 ${isRevealed ? 'filter-none' : 'filter blur-sm'}`}>
                   <p className={`absolute inset-0 bg-zinc-700 opacity-75 ${isRevealed ? 'hidden' : ''}`}></p>
                   <p className={`relative z-10 ${isRevealed ? '' : 'blur'}`}>
