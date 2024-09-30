@@ -97,7 +97,18 @@ const DashboardTab = () => {
               <CardTitle className='mt-2 mb-4'>Deposit</CardTitle>
             </div>
             <div className="text-4xl font-bold mb-4">
-              {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+                <div className={`relative transition duration-300 ${isRevealed ? 'filter-none' : 'filter blur-sm'}`}>
+                  <p className={`absolute inset-0 bg-zinc-700 opacity-75 ${isRevealed ? 'hidden' : ''}`}></p>
+                  <p className={`relative z-10 ${isRevealed ? '' : 'blur'}`}>
+                    {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+                  </p>
+                </div>
+              <button
+                onClick={toggleText}
+                className="transition ml-2">
+                  {isRevealed ? <VisibilityIcon/> : <VisibilityOffIcon/>}
+              </button>
+              
             </div>
             <div className="flex justify-between items-center text-sm mt-2">
               <Badge variant="outline" className="bg-blue-100 text-blue-600">
@@ -113,14 +124,14 @@ const DashboardTab = () => {
             </div>
             <div className="text-4xl font-bold flex">
                 <div className={`relative transition duration-300 ${isRevealed ? 'filter-none' : 'filter blur-sm'}`}>
-                <p className={`absolute inset-0 bg-zinc-700 opacity-75 ${isRevealed ? 'hidden' : ''}`}></p>
-                <p className={`relative z-10 ${isRevealed ? '' : 'blur'}`}>
-                {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws+balance) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
-              </p>
-            </div>
+                  <p className={`absolute inset-0 bg-zinc-700 opacity-75 ${isRevealed ? 'hidden' : ''}`}></p>
+                  <p className={`relative z-10 ${isRevealed ? '' : 'blur'}`}>
+                    {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws+balance) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+                  </p>
+                </div>
               <button
                 onClick={toggleText}
-                className="transition">
+                className="transition ml-2">
                   {isRevealed ? <VisibilityIcon/> : <VisibilityOffIcon/>}
               </button>
             </div>
