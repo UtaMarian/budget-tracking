@@ -109,14 +109,17 @@ const DashboardTab = () => {
             <div className='pace-y-1.5'>
               <CardTitle className='mt-2 mb-4'>Total</CardTitle>
             </div>
-            <div className="text-4xl font-bold">
-              <p className={`transition duration-300 ${isRevealed ? 'filter-none' : 'filter blur-sm'}`}>
+            <div className="text-4xl font-bold flex">
+                <div className={`relative transition duration-300 ${isRevealed ? 'filter-none' : 'filter blur-sm'}`}>
+                <p className={`absolute inset-0 bg-gray-800 opacity-75 ${isRevealed ? 'hidden' : ''}`}></p>
+                <p className={`relative z-10 text-white ${isRevealed ? '' : 'blur'}`}>
                 {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws+balance) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
               </p>
+            </div>
               <button
                 onClick={toggleText}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-                  {isRevealed ? 'Hide Text' : 'Show Text'}
+                className="mt-4 px-4 py-2 bg-default text-white rounded hover:bg-dark-600 transition">
+                  {isRevealed ? 'Hide' : 'Show'}
               </button>
             </div>
 
