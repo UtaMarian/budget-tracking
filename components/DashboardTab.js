@@ -7,6 +7,8 @@ import TransactionForm from '@/components/TransactionForm'; // Import the transa
 import ExpensePieChart from '@/components/ExpensePieChart'; 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from "@/components/ui/separator"
+import { FaEye } from "react-icons/fa";
+import { FaEyeSlash } from "react-icons/fa";
 
 const DashboardTab = () => {
   const [balance, setBalance] = useState(0);
@@ -112,14 +114,14 @@ const DashboardTab = () => {
             <div className="text-4xl font-bold flex">
                 <div className={`relative transition duration-300 ${isRevealed ? 'filter-none' : 'filter blur-sm'}`}>
                 <p className={`absolute inset-0 bg-gray-800 opacity-75 ${isRevealed ? 'hidden' : ''}`}></p>
-                <p className={`relative z-10 text-white ${isRevealed ? '' : 'blur'}`}>
+                <p className={`relative z-10 ${isRevealed ? '' : 'blur'}`}>
                 {currency === 'EUR' ? '€' : 'LEI '}{((totalDeposits+totalWithdraws+balance) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
               </p>
             </div>
               <button
                 onClick={toggleText}
-                className="mt-4 px-4 py-2 bg-default text-white rounded hover:bg-dark-600 transition">
-                  {isRevealed ? 'Hide' : 'Show'}
+                className="mt-4 px-4 py-2 bg-zinc text-white rounded hover:bg-zinc-900 transition">
+                  {isRevealed ? <FaEyeSlash/> : <FaEye/>}
               </button>
             </div>
 
