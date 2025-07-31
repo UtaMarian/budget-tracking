@@ -12,12 +12,17 @@ export default async function handler(req, res) {
           _id: null,
           balance: {
             $sum: {
-              $cond: [{ $eq: ["$type", "income"] }, "$amount", { $multiply: ["$amount", -1] }]
+              $cond: [
+                { $eq: ["$type", "income"] },
+                { $toDouble: "$amount" },
+                { $multiply: [{ $toDouble: "$amount" }, -1] }
+              ]
             }
           }
         }
       }
     ]).toArray();
+    console.log('Transactions:', balanceResult);
     return {
       transactions,
       balance: balanceResult.length > 0 ? balanceResult[0].balance : 0,

@@ -36,7 +36,7 @@ const DashboardTab = () => {
 //   };
   
   const fetchTransactions = async () => {
-    const res = await fetch('/api/transactions?limit=5');
+    const res = await fetch('/api/transactions');
     const data = await res.json();
     setTransactions(data.transactions);
     setBalance(data.balance);
