@@ -1,47 +1,44 @@
-import sql from '../../lib/db';
+import { ObjectId } from 'mongodb';
+import clientPromise from '../../lib/db';
 
 export default async function handler(req, res) {
+  const client = await clientPromise;
+  const db = client.db("budget-tracking");
+
   if (req.method === 'GET') {
     try {
-      const result = await sql.query(`SELECT * FROM ShoppingList where tag!='bought' ORDER BY created_at DESC`);
-      res.status(200).json(result.recordset);
+      const items = await db.collection('shoppingList').find({ tag: { $ne: 'bought' } }).sort({ created_at: -1 }).toArray();
+      res.status(200).json(items);
     } catch (err) {
       console.error('Error fetching shopping list:', err);
       res.status(500).json({ error: 'Error fetching shopping list' });
     }
-  }else if (req.method === 'POST') {
+  } else if (req.method === 'POST') {
     const { name, amount, importance } = req.body;
     if (!name || !amount || !importance) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
-      await sql.query(`
-        INSERT INTO ShoppingList (name, amount, importance)
-        VALUES ('${name}', ${amount}, '${importance}')
-      `);
+      await db.collection('shoppingList').insertOne({ name, amount, importance, created_at: new Date() });
       res.status(201).json({ message: 'Product added to shopping list' });
     } catch (err) {
       console.error('Error adding product to shopping list:', err);
       res.status(500).json({ error: 'Error adding product to shopping list' });
     }
-  }else if (req.method === 'PUT') {
+  } else if (req.method === 'PUT') {
     const { id } = req.query;
     const { amount, importance } = req.body;
     if (!amount && !importance) {
       return res.status(400).json({ error: 'Missing fields to update' });
     }
 
-    let updateQuery = '';
-    if (amount) updateQuery += `amount = ${amount}`;
-    if (importance) updateQuery += `${updateQuery ? ', ' : ''}importance = '${importance}'`;
+    const updateFields = {};
+    if (amount) updateFields.amount = amount;
+    if (importance) updateFields.importance = importance;
 
     try {
-      await sql.query(`
-        UPDATE ShoppingList
-        SET ${updateQuery}
-        WHERE id = ${id}
-      `);
+      await db.collection('shoppingList').updateOne({ _id: new ObjectId(id) }, { $set: updateFields });
       res.status(200).json({ message: 'Product updated successfully' });
     } catch (err) {
       console.error('Error updating product:', err);
@@ -53,25 +50,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Product ID is required' });
     }
     try {
-      await sql.query(`DELETE FROM ShoppingList WHERE id = @id`, { id });
+      await db.collection('shoppingList').deleteOne({ _id: new ObjectId(id) });
       res.status(200).json({ message: 'Product deleted successfully' });
     } catch (err) {
       console.error('Error deleting product:', err);
       res.status(500).json({ error: 'Error deleting product' });
     }
-  }  
-  else if (req.method === 'POST' && req.url.includes('/buy')) {
-    const { id } = req.query;
-    try {
-      await sql.query(`UPDATE ShoppingList SET bought = 1 WHERE id = @id`, { id });
-      res.status(200).json({ message: 'Product marked as bought' });
-    } catch (err) {
-      console.error('Error marking product as bought:', err);
-      res.status(500).json({ error: 'Error marking product as bought' });
-    }
-  }  
-   else {
+  } else {
     res.status(405).json({ message: 'Method not allowed' });
-  } 
-
+  }
 }

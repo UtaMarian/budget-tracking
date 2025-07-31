@@ -1,25 +1,48 @@
-import sql from '../../lib/db';
+import clientPromise from '../../lib/db';
 
 export default async function handler(req, res) {
-  await sql.connect();
+  const client = await clientPromise;
+  const db = client.db("budget-tracking");
 
   if (req.method === 'GET') {
     try {
-      // Query to get budgets along with total spends for each category
-      const result = await sql.query(`
-        SELECT bc.id, bc.name, bc.limit, 
-               ISNULL(SUM(t.amount), 0) AS total_spent
-        FROM BudgetCategories bc
-        LEFT JOIN Transactions t ON t.category = bc.name AND t.type = 'expense'
-        GROUP BY bc.id, bc.name, bc.limit
-      `);
-
-      const budgets = result.recordset.map(budget => ({
-        id: budget.id,
-        name: budget.name,
-        limit: budget.limit,
-        totalSpent: budget.total_spent,
-      }));
+      const budgets = await db.collection('budgetCategories').aggregate([
+        {
+          $lookup: {
+            from: 'transactions',
+            localField: 'name',
+            foreignField: 'category',
+            as: 'transactions'
+          }
+        },
+        {
+          $unwind: {
+            path: '$transactions',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $match: {
+            'transactions.type': 'expense'
+          }
+        },
+        {
+          $group: {
+            _id: '$_id',
+            name: { $first: '$name' },
+            limit: { $first: '$limit' },
+            totalSpent: { $sum: '$transactions.amount' }
+          }
+        },
+        {
+          $project: {
+            id: '$_id',
+            name: 1,
+            limit: 1,
+            totalSpent: 1
+          }
+        }
+      ]).toArray();
 
       res.status(200).json(budgets);
     } catch (err) {

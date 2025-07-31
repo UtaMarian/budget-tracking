@@ -1,12 +1,14 @@
-import sql from '../../lib/db';
+import { ObjectId } from 'mongodb';
+import clientPromise from '../../lib/db';
 
 export default async function handler(req, res) {
-    await sql.connect();
+    const client = await clientPromise;
+    const db = client.db("budget-tracking");
 
     if (req.method === 'GET') {
         try {
-            const result = await sql.query(`SELECT * FROM TransactionCategories`);
-            res.status(200).json(result.recordset);
+            const categories = await db.collection('transactionCategories').find({}).toArray();
+            res.status(200).json(categories);
         } catch (err) {
             console.error('Error fetching transaction categories:', err.message);
             res.status(500).json({ error: 'Error fetching transaction categories' });
@@ -19,7 +21,7 @@ export default async function handler(req, res) {
         }
 
         try {
-            const result = await sql.query(`INSERT INTO TransactionCategories (name, type) VALUES ('${name}', '${type}')`);
+            const result = await db.collection('transactionCategories').insertOne({ name, type });
             res.status(201).json({ message: 'Transaction category added', result });
         } catch (err) {
             console.error('Error adding transaction category:', err.message);
@@ -32,7 +34,7 @@ export default async function handler(req, res) {
         }
 
         try {
-            await sql.query(`DELETE FROM TransactionCategories WHERE id = ${id}`);
+            await db.collection('transactionCategories').deleteOne({ _id: new ObjectId(id) });
             res.status(200).json({ message: 'Transaction category deleted' });
         } catch (err) {
             console.error('Error deleting transaction category:', err.message);

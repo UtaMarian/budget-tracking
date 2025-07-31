@@ -1,32 +1,35 @@
-// File: pages/api/shopping-list/[id]/buy.js
-import sql from '../../../../lib/db'; // Adjust the path according to your project structure
+import { ObjectId } from 'mongodb';
+import clientPromise from '../../../../lib/db';
 
 export default async function handler(req, res) {
-  const { id } = req.query; // Get the product ID from the query
+  const { id } = req.query;
+  const client = await clientPromise;
+  const db = client.db("budget-tracking");
 
   if (req.method === 'POST') {
+    const session = client.startSession();
     try {
-      // First, retrieve the product details from the ShoppingList
-      const productResult = await sql.query(`SELECT name, amount, importance FROM ShoppingList WHERE id = ${id}`);
-      if (productResult.recordset.length === 0) {
-        return res.status(404).json({ error: 'Product not found' });
-      }
-      
-      const product = productResult.recordset[0];
+      await session.withTransaction(async () => {
+        const product = await db.collection('shoppingList').findOne({ _id: new ObjectId(id) }, { session });
+        if (!product) {
+          throw new Error('Product not found');
+        }
 
-      // Update the product to mark as bought
-      await sql.query(`UPDATE ShoppingList SET tag = 'bought' WHERE id = ${ id }`);
+        await db.collection('shoppingList').updateOne({ _id: new ObjectId(id) }, { $set: { tag: 'bought' } }, { session });
 
-      // Insert into ShoppingHistory
-      await sql.query(`
-        INSERT INTO ShoppingHistory (name, amount, importance, tag)
-        VALUES ('${product.name}', ${product.amount}, '${product.importance}', 'bought')`
-      );
-      
-
+        await db.collection('shoppingHistory').insertOne(
+          { ...product, tag: 'bought', bought_at: new Date() },
+          { session }
+        );
+      });
+      session.endSession();
       return res.status(200).json({ message: 'Product marked as bought and added to history' });
     } catch (err) {
+      session.endSession();
       console.error('Error processing buy request:', err);
+      if (err.message === 'Product not found') {
+        return res.status(404).json({ error: err.message });
+      }
       return res.status(500).json({ error: 'Error processing buy request' });
     }
   } else {

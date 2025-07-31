@@ -1,17 +1,19 @@
-// api/deposit.js
-import sql from '../../lib/db';
+import clientPromise from '../../lib/db';
 
 export default async function handler(req, res) {
-  await sql.connect();
+  const client = await clientPromise;
+  const db = client.db("budget-tracking");
 
   if (req.method === 'GET') {
     try {
-      const result = await sql.query(`SELECT * FROM DepositTransactions ORDER BY date DESC`);
-      const total = await sql.query(`SELECT SUM(amount) as totalDeposit FROM DepositTransactions`);
+      const transactions = await db.collection('depositTransactions').find({}).sort({ date: -1 }).toArray();
+      const totalResult = await db.collection('depositTransactions').aggregate([
+        { $group: { _id: null, totalDeposit: { $sum: "$amount" } } }
+      ]).toArray();
 
       res.status(200).json({
-        transactions: result.recordset,
-        total: total.recordset[0].totalDeposit || 0,
+        transactions,
+        total: totalResult.length > 0 ? totalResult[0].totalDeposit : 0,
       });
     } catch (err) {
       console.error('Error fetching deposit transactions:', err);
@@ -25,20 +27,25 @@ export default async function handler(req, res) {
     }
 
     const transactionType = type === 'deposit' ? 'deposit' : 'withdraw';
-    const transactionAmount = type === 'deposit' ? amount : -amount; // Withdraw will subtract from balance
+    const transactionAmount = type === 'deposit' ? amount : -amount;
 
     try {
-      // Insert into DepositTransactions
-      await sql.query(`
-        INSERT INTO DepositTransactions (type, amount, date)
-        VALUES ('${transactionType}', ${transactionAmount}, GETDATE())
-      `);
+      const session = client.startSession();
+      await session.withTransaction(async () => {
+        await db.collection('depositTransactions').insertOne({
+          type: transactionType,
+          amount: transactionAmount,
+          date: new Date(),
+        }, { session });
 
-      // Insert a normal transaction in the Transactions table to adjust balance
-      await sql.query(`
-        INSERT INTO Transactions (type, category, amount, date)
-        VALUES ('${transactionType}', 'Deposit/Withdraw', ${transactionAmount}, GETDATE())
-      `);
+        await db.collection('transactions').insertOne({
+          type: transactionType,
+          category: 'Deposit/Withdraw',
+          amount: transactionAmount,
+          date: new Date(),
+        }, { session });
+      });
+      session.endSession();
 
       res.status(201).json({ message: 'Transaction added' });
     } catch (err) {
