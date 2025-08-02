@@ -15,7 +15,13 @@ const DashboardTab = () => {
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]); // State for budgets
   const [categories, setCategories] = useState([]);
-  const [currency, setCurrency] = useState('LEI'); // Default to Euro
+  const [currency, setCurrency] = useState('LEI'); // Default to 
+  
+  //reminders
+  const [redReminders, setRedReminders] = useState([]);
+  const [hideReminderBox, setHideReminderBox] = useState(false);
+
+  // Euro
   const conversionRate = 5; // 1 Euro = 5 Lei
   const [isRevealed, setIsRevealed] = useState(false);
   const toggleText = () => {
@@ -27,6 +33,10 @@ const DashboardTab = () => {
     fetchCategories();
     fetchBudgets(); // Fetch budgets when the component mounts
    // fetchAccountBalance();
+  }, []);
+
+  useEffect(() => {
+    fetchRedReminders();
   }, []);
 
 //   const fetchAccountBalance = async () => {
@@ -51,7 +61,26 @@ const DashboardTab = () => {
   const fetchBudgets = async () => {
     const res = await fetch('/api/budgets'); // Your API endpoint to fetch budgets
     const data = await res.json();
-    setBudgets(data); // Assuming data is an array of budget objects
+    setBudgets(data); 
+    
+  };
+
+  const fetchRedReminders = async () => {
+    try {
+      const res = await fetch('/api/reminders');
+      const data = await res.json();
+
+      const today = new Date();
+      const red = data.reminders.filter(r => {
+        const due = new Date(r.date);
+        const diff = (due - today) / (1000 * 60 * 60 * 24);
+        return diff < 1;
+      });
+
+      setRedReminders(red);
+    } catch (error) {
+      console.error("Error fetching reminders:", error);
+    }
   };
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
@@ -143,8 +172,40 @@ const DashboardTab = () => {
         <ExpensePieChart transactions={transactions} />
        
       </div>
+     {/**CURS BNR */}
+     <div className="mt-6 flex justify-center">
+      <iframe
+        style={{ width: 400, height: 125 }}
+        src="https://www.cursbnr.ro/insert/cursvalutar.php?w=300&b=ffffff&bl=fffff&ttc=0a6eab&tc=000000&diff=1&ron=1&cb=0&pics=1"
+        title="Curs Valutar BNR"
+      />
+    </div>
+       {/* Reminders*/}
+     {!hideReminderBox && redReminders.length > 0 && (
+        <div className="bg-rose-50 border border-rose-300 text-rose-900 p-5 rounded-xl shadow-sm mb-6 relative my-6">
+          <button
+            onClick={() => setHideReminderBox(true)}
+            className="absolute top-3 right-3 text-rose-500 hover:text-rose-700 transition"
+            aria-label="Dismiss alert"
+          >
+            ✖
+          </button>
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-xl">⚠️</span> Urgent Reminders
+          </h2>
+          <ul className="list-disc list-inside space-y-1 pl-1 text-sm">
+            {redReminders.map((r, index) => (
+              <li key={index}>
+                <span className="font-medium">{r.icon} {r.title}</span> – {r.category} – 
+                <span className="font-semibold text-rose-700 ml-1">LEI {parseFloat(r.amount).toFixed(2)}</span> due on 
+                <span className="italic ml-1">{new Date(r.date).toLocaleDateString()}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-      {/* Display Budgets with Progress Bars */}
+    {/* Display Budgets with Progress Bars */}
     <div className="mt-6">
         <Card>
             <CardHeader>
@@ -156,23 +217,42 @@ const DashboardTab = () => {
                 .filter((t) => t.category === budget.name && t.type === 'expense') // Use budget.name instead of budget.category
                 .reduce((sum, t) => sum + (t.amount || 0), 0);
 
+                budget.totalSpent = spent; 
                 const progress = (budget.totalSpent / budget.limit) * 100;
 
                 // Determine the progress bar color based on the progress
                 const progressColor = progress > 100 ? 'bg-red-500' : 'bg-green-500'; // Red if over budget, green otherwise
 
                 return (
-                <div key={budget.id} className="mb-4">
+                 <div key={budget.id} className="mb-4">
                     <Label className="font-bold">{budget.name}</Label>
-                    <div className={`relative h-4 bg-gray-200 rounded`}>
-                    <div className={`${progressColor} h-full rounded`} style={{ width: `${progress > 100 ? 100 : progress}%` }} />
+
+                    {/* Period & Date Range Display */}
+                    <div className="text-xs text-gray-500 mb-1">
+                       {budget.period?.charAt(0).toUpperCase() + budget.period?.slice(1)}
+                      {' '}
+                      ({new Date(budget.startDate).toLocaleDateString()} - {new Date(budget.endDate).toLocaleDateString()})
                     </div>
+
+                    <div className="relative h-4 bg-gray-200 rounded">
+                      <div
+                        className={`${progressColor} h-full rounded`}
+                        style={{ width: `${progress > 100 ? 100 : progress}%` }}
+                      />
+                    </div>
+
                     <div className="flex justify-between text-sm">
-                    <span>{currency === 'EUR' ? '€' : 'lei'}{(budget.totalSpent / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}/ {currency === 'EUR' ? '€' : 'lei'}{budget.limit.toFixed(2)}</span>
-                    
-                    <span>{progress.toFixed(2)}%</span>
+                      <span>
+                        {currency === 'EUR' ? '€' : 'lei'}
+                        {(budget.totalSpent / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+                        /
+                        {currency === 'EUR' ? '€' : 'lei'}
+                         {(budget.limit / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+                        
+                      </span>
+                      <span>{progress.toFixed(2)}%</span>
                     </div>
-                </div>
+                  </div>
                 );
             })}
             </CardContent>

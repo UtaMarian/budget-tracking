@@ -10,28 +10,30 @@ export default async function handler(req, res) {
         {
           $lookup: {
             from: 'transactions',
-            localField: 'name',
-            foreignField: 'category',
-            as: 'transactions'
+            let: { categoryName: '$name' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$type', 'expense'] },
+                      { $eq: ['$category', '$$categoryName'] }
+                    ]
+                  }
+                }
+              },
+              {
+                $addFields: {
+                  numericAmount: { $toDouble: "$amount" }
+                }
+              }
+            ],
+            as: 'expenses'
           }
         },
         {
-          $unwind: {
-            path: '$transactions',
-            preserveNullAndEmptyArrays: true
-          }
-        },
-        {
-          $match: {
-            'transactions.type': 'expense'
-          }
-        },
-        {
-          $group: {
-            _id: '$_id',
-            name: { $first: '$name' },
-            limit: { $first: '$limit' },
-            totalSpent: { $sum: '$transactions.amount' }
+          $addFields: {
+            totalSpent: { $sum: '$expenses.numericAmount' }
           }
         },
         {
@@ -39,7 +41,10 @@ export default async function handler(req, res) {
             id: '$_id',
             name: 1,
             limit: 1,
-            totalSpent: 1
+            totalSpent: 1,
+            startDate: 1,
+            endDate: 1,
+            period: 1
           }
         }
       ]).toArray();

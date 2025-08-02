@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 
 const SettingsTab = () => {
   const [budgetCategories, setBudgetCategories] = useState([]);
-  const [newBudget, setNewBudget] = useState({ name: '', limit: '' }); // Changed 'name' to 'categoryId'
+  const [newBudget, setNewBudget] = useState({ name: '', limit: '',period: '' }); // Changed 'name' to 'categoryId'
   const [categories, setCategories] = useState([]);
   const [newTransactionCategory, setNewTransactionCategory] = useState({ name: '', type: 'income' });
 
@@ -28,7 +28,7 @@ const SettingsTab = () => {
   };
 
   const addBudgetCategory = async () => {
-    if (newBudget.name && newBudget.limit) { // Check for categoryId
+    if (newBudget.name && newBudget.limit && newBudget.period) {
       const res = await fetch('/api/budget-categories', {
         method: 'POST',
         headers: {
@@ -38,7 +38,7 @@ const SettingsTab = () => {
       });
       if (res.ok) {
         fetchBudgetCategories();
-        setNewBudget({ name: '', limit: '' }); // Reset categoryId and limit
+        setNewBudget({ name: '', limit: '', period: '' });
       }
     }
   };
@@ -116,6 +116,19 @@ const SettingsTab = () => {
                   onChange={(e) => setNewBudget({ ...newBudget, limit: e.target.value })}
                 />
               </div>
+              <div className="flex-1">
+                <Label htmlFor="budgetPeriod">Budget Period</Label>
+                <select
+                  id="budgetPeriod"
+                  className="w-full p-2 border rounded"
+                  value={newBudget.period || ''}
+                  onChange={(e) => setNewBudget({ ...newBudget, period: e.target.value })}
+                >
+                  <option value="">Select Period</option>
+                  <option value="week">Week</option>
+                  <option value="month">Month</option>
+                </select>
+              </div>
             </div>
             <Button onClick={addBudgetCategory}>Add Budget Category</Button>
           </form>
@@ -123,7 +136,7 @@ const SettingsTab = () => {
             {budgetCategories.map(category => (
               <li key={category.id} className="flex justify-between items-center p-2 bg-gray-100 rounded mt-1">
                 <span>{category.name} - {category.limit} LEI</span>
-                <Button variant="destructive" onClick={() => deleteBudgetCategory(category.id)}>Delete</Button>
+                <Button variant="destructive" onClick={() => deleteBudgetCategory(category._id)}>Delete</Button>
               </li>
             ))}
           </ul>

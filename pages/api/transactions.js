@@ -45,7 +45,12 @@ export default async function handler(req, res) {
     }
 
     try {
-      await db.collection('transactions').insertOne({ type, category, amount, date: new Date(date) });
+     await db.collection('transactions').insertOne({
+        type,
+        category,
+        amount: Number(amount),
+        date: new Date(date)
+      });
       const { transactions, balance } = await getTransactionsAndBalance();
       res.status(200).json({ transactions, balance });
     } catch (err) {
