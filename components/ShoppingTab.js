@@ -44,9 +44,19 @@ const ShoppingTab = () => {
     }
   };
 
+
   const deleteProduct = async (id) => {
-    const res = await fetch(`/api/shopping-list/${id}`, { method: 'DELETE' });
-    if (res.ok) fetchShoppingList();
+    try {
+      const res = await fetch(`/api/shopping-list?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        // refresh list after delete
+        fetchShoppingList();
+      } else {
+        console.error('Failed to delete product');
+      }
+    } catch (err) {
+      console.error('Error deleting product:', err);
+    }
   };
 
   const markAsBought = async (product) => {
@@ -151,8 +161,7 @@ const ShoppingTab = () => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button className='mr-2' variant="outline" onClick={() => markAsBought(product)}>Buy</Button>
-                  <Button variant="destructive" onClick={() => deleteProduct(product.id)}>Delete</Button>
+                  <Button variant="destructive" onClick={() => deleteProduct(product._id)}>Delete</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -161,7 +170,7 @@ const ShoppingTab = () => {
 
        
       {/* Shopping History Table */}
-      <div>
+      {/* <div>
         <h2 className="text-2xl font-bold mb-4">Shopping History</h2>
         <Table>
           <TableHeader>
@@ -187,7 +196,7 @@ const ShoppingTab = () => {
             ))}
           </TableBody>
         </Table>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -9,10 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from "@/components/ui/separator"
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { set } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const DashboardTab = () => {
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
+  const [monthlyTransactions, setMonthlyTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]); // State for budgets
   const [categories, setCategories] = useState([]);
   const [currency, setCurrency] = useState('LEI'); // Default to 
@@ -45,10 +48,28 @@ const DashboardTab = () => {
 //     setBalance(data.totalBalance);
 //   };
   
+  // const fetchTransactions = async () => {
+  //   const res = await fetch('/api/transactions');
+  //   const data = await res.json();
+  //   setTransactions(data.transactions);
+  //   setBalance(data.balance);
+  // };
   const fetchTransactions = async () => {
     const res = await fetch('/api/transactions');
     const data = await res.json();
-    setTransactions(data.transactions);
+
+    // Filter transactions to show only those from the current month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    setTransactions(data.transactions); // Store all transactions
+    const monthlyTransactions = data.transactions.filter(t => {
+      const date = new Date(t.date);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+
+    setMonthlyTransactions(monthlyTransactions);
     setBalance(data.balance);
   };
 
@@ -87,6 +108,35 @@ const DashboardTab = () => {
   const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
   const totalDeposits = transactions.filter(t => t.type === 'deposit').reduce((sum, t) => sum + (t.amount || 0), 0);
   const totalWithdraws = transactions.filter(t => t.type === 'withdraw').reduce((sum, t) => sum + (t.amount || 0), 0);
+
+
+// --- Monthly totals aggregation (all years combined) ---
+const monthlyStats = React.useMemo(() => {
+  const map = {};
+
+  transactions.forEach((t) => {
+    const date = new Date(t.date);
+    const month = date.toLocaleString('default', { month: 'short' }); // e.g. "Jan"
+    
+    if (!map[month]) {
+      map[month] = { income: 0, expense: 0 };
+    }
+
+    if (t.type === 'income') {
+      map[month].income += t.amount || 0;
+    } else if (t.type === 'expense') {
+      map[month].expense += t.amount || 0;
+    }
+  });
+
+  // Convert map to sorted array (Jan → Dec)
+  const monthOrder = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return monthOrder.map(m => ({
+    month: m,
+    income: map[m]?.income || 0,
+    expense: map[m]?.expense || 0
+  }));
+}, [transactions]);
 
   return (
     <>
@@ -169,7 +219,7 @@ const DashboardTab = () => {
         </Card>
 
         {/* Income vs Expenses PieChart */}
-        <ExpensePieChart transactions={transactions} />
+        <ExpensePieChart transactions={monthlyTransactions} />
        
       </div>
      {/**CURS BNR */}
@@ -213,7 +263,7 @@ const DashboardTab = () => {
             </CardHeader>
             <CardContent>
             {budgets.map((budget) => {
-                const spent = transactions
+                const spent = monthlyTransactions
                 .filter((t) => t.category === budget.name && t.type === 'expense') // Use budget.name instead of budget.category
                 .reduce((sum, t) => sum + (t.amount || 0), 0);
 
@@ -279,7 +329,7 @@ const DashboardTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map(transaction => (
+              {monthlyTransactions.map(transaction => (
                 <TableRow key={transaction.id}>
                   <TableCell>
                     {transaction.type === 'income' ? (
@@ -304,6 +354,162 @@ const DashboardTab = () => {
           </Table>
         </CardContent>
       </Card>
+      {/* Monthly Income vs Expenses (All Years Combined) */}
+      {/* Global Monthly Spend vs Income Summary */}
+{/* Global Monthly Spend vs Income Summary */}
+<div className="bg-white border p-4 rounded-xl mb-6 mt-6 shadow-sm">
+  <p className="text-lg font-semibold mb-3">Overall Monthly Balance</p>
+  {(() => {
+    const totalIncomeAll = monthlyStats.reduce((s, m) => s + m.income, 0);
+    const totalExpenseAll = monthlyStats.reduce((s, m) => s + m.expense, 0);
+    const net = totalIncomeAll - totalExpenseAll;
+
+    // Percentage of expense relative to income
+    const expensePercent = totalIncomeAll
+      ? (totalExpenseAll / totalIncomeAll) * 100
+      : 0;
+
+    // Limit to 150% for overspend visualization
+    const clampedExpensePercent = Math.min(expensePercent, 150);
+
+    const isOver = totalExpenseAll > totalIncomeAll;
+
+    return (
+      <>
+        <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden mb-2">
+          {/* Income section (background) */}
+          <div
+            className="absolute left-0 top-0 h-full bg-green-400 opacity-60"
+            style={{ width: '100%' }}
+          />
+
+          {/* Expense overlay */}
+          <div
+            className="absolute left-0 top-0 h-full bg-red-500"
+            style={{
+              width: `${Math.min(expensePercent, 100)}%`,
+              opacity: 0.8,
+            }}
+          />
+
+          {/* Net label */}
+          <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-gray-700">
+            {isOver ? (
+              <span className="text-red-600">
+                Overspent {currency === 'EUR' ? '€' : 'lei'}
+                {Math.abs(net / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+              </span>
+            ) : (
+              <span className="text-black">
+                Saved {currency === 'EUR' ? '€' : 'lei'}
+                {(net / (currency === 'LEI' ? 1 : conversionRate)).toFixed(2)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Legend & totals */}
+        <div className="flex justify-between text-xs text-gray-600 mt-1">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 bg-green-400 rounded-sm" /> Income:
+            {currency === 'EUR' ? '€' : 'lei'}
+            {(totalIncomeAll / (currency === 'LEI' ? 1 : conversionRate)).toFixed(0)}
+          </span>
+
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 bg-red-500 rounded-sm" /> Expense:
+            {currency === 'EUR' ? '€' : 'lei'}
+            {(totalExpenseAll / (currency === 'LEI' ? 1 : conversionRate)).toFixed(0)}
+          </span>
+
+          <span className={isOver ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
+            {isOver
+              ? `-${expensePercent.toFixed(1)}%`
+              : `${(100 - expensePercent).toFixed(1)}% saved`}
+          </span>
+        </div>
+      </>
+    );
+  })()}
+</div>
+
+
+{/* Mobile-Friendly Monthly Overview */}
+<div className="mt-10">
+  <Card>
+    <CardHeader>
+      <CardTitle>Monthly Overview</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="flex overflow-x-auto space-x-4 pb-4 snap-x snap-mandatory scrollbar-thin">
+        {monthlyStats.map((m, index) => {
+          const income = m.income;
+          const expense = m.expense;
+          const net = income - expense;
+          const progress = income ? (expense / income) * 100 : 0;
+
+          const isOver = expense > income;
+          const progressColor = isOver ? "bg-red-500" : "bg-green-500";
+          if (income === 0 && expense === 0) {
+            return null; // Skip months with no activity
+          }else{
+          return (
+            <div
+  key={index}
+  className="min-w-[200px] snap-start bg-white border rounded-2xl p-4 shadow-sm flex-shrink-0"
+>
+  <p className="font-semibold text-center text-sm text-gray-700 mb-1">{m.month}</p>
+
+  {/* Income and Expense amounts */}
+  <div className="text-xs text-gray-500 mb-1">
+    Income: <span className="text-green-600 font-medium">
+      {currency === 'EUR' ? '€' : 'lei'}{(income / (currency === 'LEI' ? 1 : conversionRate)).toFixed(0)}
+    </span>
+  </div>
+  <div className="text-xs text-gray-500 mb-2">
+    Expense: <span className="text-red-600 font-medium">
+      {currency === 'EUR' ? '€' : 'lei'}{(expense / (currency === 'LEI' ? 1 : conversionRate)).toFixed(0)}
+    </span>
+  </div>
+
+  {/* Dual progress bar */}
+  <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+    <div
+      className="absolute left-0 top-0 h-full bg-green-400"
+      style={{
+        width: `${Math.min((income / Math.max(income, expense)) * 100, 100)}%`,
+        opacity: 0.7,
+      }}
+    />
+    <div
+      className="absolute left-0 top-0 h-full bg-red-500"
+      style={{
+        width: `${Math.min((expense / Math.max(income, expense)) * 100, 100)}%`,
+      }}
+    />
+  </div>
+
+  {/* Text summary */}
+  {net >= 0 ? (
+    <p className="text-xs font-semibold text-green-600 text-center">
+      Saved {currency === 'EUR' ? '€' : 'lei'}{(net / (currency === 'LEI' ? 1 : conversionRate)).toFixed(0)} 👍
+    </p>
+  ) : (
+    <p className="text-xs font-semibold text-red-500 text-center">
+      Overspent {currency === 'EUR' ? '€' : 'lei'}{(Math.abs(net) / (currency === 'LEI' ? 1 : conversionRate)).toFixed(0)} ⚠️
+    </p>
+  )}
+</div>
+
+          );
+        }
+        })}
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+
     </>
   );
 };
